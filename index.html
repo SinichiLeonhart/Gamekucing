@@ -1,326 +1,210 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
-    <meta charset="UTF-8">
+    <title>Mobile FPS</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Game Mobile Sederhana</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            touch-action: manipulation;
-        }
-        
         body {
-            font-family: 'Arial', sans-serif;
-            background: #4a90e2;
+            margin: 0;
             overflow: hidden;
+            touch-action: none;
+            background-color: #1a1a1a;
+        }
+
+        #gameContainer {
+            width: 100vw;
             height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            perspective: 1000px;
+            cursor: crosshair;
         }
-        
-        #game-container {
-            position: relative;
-            width: 100%;
-            max-width: 400px;
-            height: 600px;
-            background: url('https://images.unsplash.com/photo-1532274402911-5a369e4c4bb5?w=800') center/cover;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-        
-        #character {
+
+        #crosshair {
             position: absolute;
-            width: 60px;
-            height: 60px;
-            background: url('https://images.unsplash.com/photo-1511044568932-338cba0ad803?w=200') center/cover;
-            bottom: 20px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            transition: transform 0.1s;
-            z-index: 10;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 0, 0, 0.8);
+            border-radius: 50%;
+            pointer-events: none;
         }
-        
-        .obstacle {
+
+        .projectile {
             position: absolute;
-            width: 60px;
-            height: 60px;
-            background: url('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=200') center/cover;
-            top: -60px;
-            animation: fall linear infinite;
+            width: 5px;
+            height: 5px;
+            background: yellow;
+            border-radius: 50%;
         }
-        
-        #score-display {
+
+        .target {
             position: absolute;
+            width: 50px;
+            height: 50px;
+            background: red;
+            border-radius: 50%;
+            animation: float 2s ease-in-out infinite;
+        }
+
+        #score {
+            position: fixed;
             top: 20px;
             left: 20px;
             color: white;
+            font-family: Arial;
             font-size: 24px;
-            font-weight: bold;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
             z-index: 100;
         }
-        
-        #start-screen, #game-over {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+
+        #startScreen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
             color: white;
-            z-index: 200;
+            font-family: Arial;
         }
-        
-        button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background: #ff4757;
-            color: white;
+
+        #startButton {
+            padding: 15px 30px;
+            font-size: 20px;
+            background: #4CAF50;
             border: none;
+            color: white;
             border-radius: 5px;
-            font-size: 18px;
             cursor: pointer;
         }
-        
-        @keyframes fall {
-            to {
-                transform: translateY(660px);
-            }
-        }
-        
-        @keyframes jump {
-            0% { transform: translateX(-50%) translateY(0); }
-            50% { transform: translateX(-50%) translateY(-150px); }
-            100% { transform: translateX(-50%) translateY(0); }
-        }
-        
-        .jump {
-            animation: jump 0.5s ease-out;
-        }
-        
-        #controls {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 400px;
-            margin-top: 20px;
-        }
-        
-        .control-btn {
-            width: 80px;
-            height: 80px;
-            background: rgba(255,255,255,0.3);
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            color: white;
-            user-select: none;
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
         }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <div id="score-display">0</div>
-        <div id="character"></div>
-        
-        <div id="start-screen">
-            <h1>Kucing Pelompat</h1>
-            <p>Hindari rintangan dan dapatkan skor tertinggi!</p>
-            <button id="start-btn">Mulai Game</button>
-        </div>
-        
-        <div id="game-over" style="display: none;">
-            <h1>Game Over!</h1>
-            <p id="final-score">Skor Anda: 0</p>
-            <button id="restart-btn">Main Lagi</button>
-        </div>
+    <div id="startScreen">
+        <h1>FPS Game</h1>
+        <button id="startButton">Start Game</button>
     </div>
     
-    <div id="controls">
-        <div class="control-btn" id="left-btn">←</div>
-        <div class="control-btn" id="right-btn">→</div>
-        <div class="control-btn" id="jump-btn">↑</div>
+    <div id="gameContainer">
+        <div id="score">Score: 0</div>
+        <div id="crosshair"></div>
     </div>
-    
+
     <script>
-        // Game variables
+        const gameContainer = document.getElementById('gameContainer');
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
         let score = 0;
-        let gameSpeed = 2;
-        let gameRunning = false;
-        let characterX = 50;
-        let isJumping = false;
-        let obstacles = [];
-        let gameInterval;
-        
-        // DOM elements
-        const character = document.getElementById('character');
-        const gameContainer = document.getElementById('game-container');
-        const scoreDisplay = document.getElementById('score-display');
-        const startScreen = document.getElementById('start-screen');
-        const gameOverScreen = document.getElementById('game-over');
-        const finalScore = document.getElementById('final-score');
-        const startBtn = document.getElementById('start-btn');
-        const restartBtn = document.getElementById('restart-btn');
-        const leftBtn = document.getElementById('left-btn');
-        const rightBtn = document.getElementById('right-btn');
-        const jumpBtn = document.getElementById('jump-btn');
-        
-        // Game functions
-        function startGame() {
-            score = 0;
-            gameSpeed = 2;
-            gameRunning = true;
-            characterX = 50;
-            obstacles = [];
-            scoreDisplay.textContent = score;
+        let isShooting = false;
+        let touchId = null;
+        let lookTouchId = null;
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        let xAngle = 0;
+        let yAngle = 0;
+
+        // Initialize game
+        function initGame() {
             startScreen.style.display = 'none';
-            gameOverScreen.style.display = 'none';
-            
-            // Clear any existing obstacles
-            document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
-            
-            // Start game loop
-            gameInterval = setInterval(updateGame, 20);
-            
-            // Start obstacle spawner
-            setTimeout(spawnObstacle, 1000);
+            gameContainer.style.display = 'block';
+            spawnTarget();
+            setInterval(spawnTarget, 3000);
         }
-        
-        function updateGame() {
-            if (!gameRunning) return;
+
+        // Target spawner
+        function spawnTarget() {
+            const target = document.createElement('div');
+            target.className = 'target';
+            target.style.left = Math.random() * 80 + 10 + '%';
+            target.style.top = Math.random() * 80 + 10 + '%';
             
-            // Update score
-            score++;
-            scoreDisplay.textContent = Math.floor(score / 10);
-            
-            // Increase difficulty
-            if (score % 500 === 0) {
-                gameSpeed += 0.5;
-            }
-            
-            // Update character position
-            character.style.left = `${characterX}%`;
-            
-            // Update obstacles
-            const containerWidth = gameContainer.offsetWidth;
-            const containerHeight = gameContainer.offsetHeight;
-            
-            document.querySelectorAll('.obstacle').forEach(obs => {
-                const obsTop = parseInt(obs.style.top) || -60;
-                const newTop = obsTop + gameSpeed;
-                obs.style.top = `${newTop}px`;
-                
-                // Check collision
-                const obsRect = obs.getBoundingClientRect();
-                const charRect = character.getBoundingClientRect();
-                
-                if (
-                    charRect.left < obsRect.right &&
-                    charRect.right > obsRect.left &&
-                    charRect.top < obsRect.bottom &&
-                    charRect.bottom > obsRect.top
-                ) {
-                    gameOver();
-                }
-                
-                // Remove obstacle if out of screen
-                if (newTop > containerHeight) {
-                    obs.remove();
-                    obstacles = obstacles.filter(o => o !== obs);
-                }
+            target.addEventListener('click', () => {
+                score += 100;
+                document.getElementById('score').textContent = `Score: ${score}`;
+                target.remove();
+            });
+
+            gameContainer.appendChild(target);
+        }
+
+        // Shooting logic
+        function shoot() {
+            const projectile = document.createElement('div');
+            projectile.className = 'projectile';
+            projectile.style.transform = `translateZ(500px)`;
+            gameContainer.appendChild(projectile);
+
+            requestAnimationFrame(() => {
+                projectile.style.transform = `translateZ(1000px)`;
+                setTimeout(() => projectile.remove(), 500);
             });
         }
-        
-        function spawnObstacle() {
-            if (!gameRunning) return;
-            
-            const obstacle = document.createElement('div');
-            obstacle.className = 'obstacle';
-            
-            const containerWidth = gameContainer.offsetWidth;
-            const randomPos = Math.random() * 70 + 15; // Random position between 15% and 85%
-            
-            obstacle.style.left = `${randomPos}%`;
-            obstacle.style.animationDuration = `${3000 / gameSpeed}ms`;
-            
-            gameContainer.appendChild(obstacle);
-            obstacles.push(obstacle);
-            
-            // Schedule next obstacle
-            const randomTime = Math.random() * 1500 + 1000;
-            setTimeout(spawnObstacle, randomTime / gameSpeed);
-        }
-        
-        function gameOver() {
-            gameRunning = false;
-            clearInterval(gameInterval);
-            finalScore.textContent = `Skor Anda: ${Math.floor(score / 10)}`;
-            gameOverScreen.style.display = 'flex';
-        }
-        
-        function jump() {
-            if (isJumping) return;
-            
-            isJumping = true;
-            character.classList.add('jump');
-            
-            setTimeout(() => {
-                character.classList.remove('jump');
-                isJumping = false;
-            }, 500);
-        }
-        
-        // Event listeners
-        startBtn.addEventListener('click', startGame);
-        restartBtn.addEventListener('click', startGame);
-        
-        jumpBtn.addEventListener('click', jump);
-        
-        // Touch controls
-        leftBtn.addEventListener('touchstart', () => {
-            characterX = Math.max(10, characterX - 20);
+
+        // Event Listeners
+        startButton.addEventListener('click', initGame);
+
+        // Desktop controls
+        gameContainer.addEventListener('mousedown', () => {
+            isShooting = true;
+            shoot();
         });
-        
-        rightBtn.addEventListener('touchstart', () => {
-            characterX = Math.min(90, characterX + 20);
+
+        gameContainer.addEventListener('mouseup', () => {
+            isShooting = false;
         });
-        
-        jumpBtn.addEventListener('touchstart', jump);
-        
-        // Keyboard controls for testing on desktop
-        document.addEventListener('keydown', (e) => {
-            if (!gameRunning) return;
-            
-            switch(e.key) {
-                case 'ArrowLeft':
-                    characterX = Math.max(10, characterX - 20);
-                    break;
-                case 'ArrowRight':
-                    characterX = Math.min(90, characterX + 20);
-                    break;
-                case 'ArrowUp':
-                case ' ':
-                    jump();
-                    break;
+
+        gameContainer.addEventListener('mousemove', (e) => {
+            if(!isShooting) {
+                const sensitivity = 0.2;
+                xAngle += e.movementX * sensitivity;
+                yAngle += e.movementY * sensitivity;
+                gameContainer.style.transform = `rotateX(${-yAngle}deg) rotateY(${-xAngle}deg)`;
             }
         });
-        
-        // Prevent scrolling on touch devices
-        document.addEventListener('touchmove', (e) => {
-            if (gameRunning) {
-                e.preventDefault();
+
+        // Mobile controls
+        gameContainer.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            touchId = touch.identifier;
+            lastTouchX = touch.clientX;
+            lastTouchY = touch.clientY;
+            
+            // Shooting touch (right side)
+            if(touch.clientX > window.innerWidth/2) {
+                shoot();
+            } else { // Movement touch (left side)
+                lookTouchId = touch.identifier;
             }
-        }, { passive: false });
+        });
+
+        gameContainer.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = Array.from(e.touches).find(t => t.identifier === lookTouchId);
+            if(touch) {
+                const deltaX = touch.clientX - lastTouchX;
+                const deltaY = touch.clientY - lastTouchY;
+                const sensitivity = 0.5;
+                
+                xAngle += deltaX * sensitivity;
+                yAngle += deltaY * sensitivity;
+                gameContainer.style.transform = `rotateX(${-yAngle}deg) rotateY(${-xAngle}deg)`;
+                
+                lastTouchX = touch.clientX;
+                lastTouchY = touch.clientY;
+            }
+        });
+
+        gameContainer.addEventListener('touchend', (e) => {
+            if(e.touches.length === 0) {
+                touchId = null;
+                lookTouchId = null;
+            }
+        });
     </script>
 </body>
 </html>
