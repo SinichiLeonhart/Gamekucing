@@ -1,23 +1,66 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Mobile FPS</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>3D FPS Game with Skills</title>
     <style>
         body {
             margin: 0;
+            padding: 0;
             overflow: hidden;
+            background-color: #000;
+            font-family: 'Arial', sans-serif;
             touch-action: none;
-            background-color: #1a1a1a;
         }
-
+        
         #gameContainer {
+            position: relative;
             width: 100vw;
             height: 100vh;
-            perspective: 1000px;
-            cursor: crosshair;
         }
-
+        
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            color: white;
+        }
+        
+        #healthBar {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 200px;
+            height: 30px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #333;
+        }
+        
+        #healthFill {
+            height: 100%;
+            width: 100%;
+            background-color: #e63946;
+            transition: width 0.3s;
+        }
+        
+        #ammoInfo {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 24px;
+            text-align: right;
+        }
+        
         #crosshair {
             position: absolute;
             top: 50%;
@@ -25,186 +68,1199 @@
             transform: translate(-50%, -50%);
             width: 20px;
             height: 20px;
-            border: 2px solid rgba(255, 0, 0, 0.8);
-            border-radius: 50%;
-            pointer-events: none;
         }
-
-        .projectile {
+        
+        .crosshair-line {
             position: absolute;
-            width: 5px;
-            height: 5px;
-            background: yellow;
-            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.8);
         }
-
-        .target {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            background: red;
-            border-radius: 50%;
-            animation: float 2s ease-in-out infinite;
+        
+        #horizontal {
+            width: 10px;
+            height: 2px;
+            left: 5px;
+            top: 9px;
         }
-
+        
+        #vertical {
+            width: 2px;
+            height: 10px;
+            left: 9px;
+            top: 5px;
+        }
+        
         #score {
-            position: fixed;
+            position: absolute;
             top: 20px;
             left: 20px;
-            color: white;
-            font-family: Arial;
             font-size: 24px;
-            z-index: 100;
         }
-
-        #startScreen {
-            position: fixed;
+        
+        #enemiesRemaining {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+        }
+        
+        #message {
+            position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: white;
             text-align: center;
-            color: white;
-            font-family: Arial;
+            opacity: 0;
+            transition: opacity 0.5s;
         }
-
-        #startButton {
-            padding: 15px 30px;
-            font-size: 20px;
-            background: #4CAF50;
-            border: none;
-            color: white;
+        
+        #weapon {
+            position: absolute;
+            bottom: 60px;
+            left: 20px;
+            font-size: 18px;
+        }
+        
+        #skills {
+            position: absolute;
+            bottom: 100px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .skill {
+            width: 50px;
+            height: 50px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 2px solid #444;
             border-radius: 5px;
-            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 12px;
+            pointer-events: auto;
+            position: relative;
         }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
+        
+        .skill-cooldown {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: rgba(0, 0, 255, 0.5);
+            transition: height 0.1s;
+        }
+        
+        #mobileControls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 150px;
+            height: 150px;
+            pointer-events: auto;
+            display: none;
+        }
+        
+        #joystick {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+        }
+        
+        #joystickKnob {
+            width: 30px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            position: absolute;
+            top: 15px;
+            left: 15px;
+        }
+        
+        #shootButton {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 80px;
+            height: 80px;
+            background-color: rgba(255, 0, 0, 0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 14px;
+            pointer-events: auto;
+            display: none;
+        }
+        
+        #mobileLook {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50%;
+            height: 70%;
+            pointer-events: auto;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <div id="startScreen">
-        <h1>FPS Game</h1>
-        <button id="startButton">Start Game</button>
-    </div>
-    
     <div id="gameContainer">
-        <div id="score">Score: 0</div>
-        <div id="crosshair"></div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="hud">
+            <div id="healthBar">
+                <div id="healthFill"></div>
+            </div>
+            <div id="ammoInfo">30 / 90</div>
+            <div id="crosshair">
+                <div id="horizontal" class="crosshair-line"></div>
+                <div id="vertical" class="crosshair-line"></div>
+            </div>
+            <div id="score">Score: 0</div>
+            <div id="enemiesRemaining">Enemies: 10</div>
+            <div id="weapon">Weapon: Phantom</div>
+            <div id="message"></div>
+            
+            <div id="skills">
+                <div class="skill" id="skill1" data-key="q">
+                    <div class="skill-cooldown" id="cooldown1"></div>
+                    <span>Dash</span>
+                </div>
+                <div class="skill" id="skill2" data-key="e">
+                    <div class="skill-cooldown" id="cooldown2"></div>
+                    <span>Heal</span>
+                </div>
+                <div class="skill" id="skill3" data-key="f">
+                    <div class="skill-cooldown" id="cooldown3"></div>
+                    <span>Nade</span>
+                </div>
+                <div class="skill" id="skill4" data-key="x">
+                    <div class="skill-cooldown" id="cooldown4"></div>
+                    <span>Ultimate</span>
+                </div>
+            </div>
+            
+            <div id="mobileControls">
+                <div id="joystick">
+                    <div id="joystickKnob"></div>
+                </div>
+            </div>
+            
+            <div id="shootButton">SHOOT</div>
+            <div id="mobileLook"></div>
+        </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/PointerLockControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script>
-        const gameContainer = document.getElementById('gameContainer');
-        const startScreen = document.getElementById('startScreen');
-        const startButton = document.getElementById('startButton');
-        let score = 0;
-        let isShooting = false;
-        let touchId = null;
-        let lookTouchId = null;
-        let lastTouchX = 0;
-        let lastTouchY = 0;
-        let xAngle = 0;
-        let yAngle = 0;
-
-        // Initialize game
-        function initGame() {
-            startScreen.style.display = 'none';
-            gameContainer.style.display = 'block';
-            spawnTarget();
-            setInterval(spawnTarget, 3000);
+        // Check if mobile device
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Game setup
+        const canvas = document.getElementById('gameCanvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(0, 1, 0);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 1024;
+        directionalLight.shadow.mapSize.height = 1024;
+        scene.add(directionalLight);
+        
+        // Controls
+        let controls;
+        if (!isMobile) {
+            controls = new THREE.PointerLockControls(camera, document.body);
         }
-
-        // Target spawner
-        function spawnTarget() {
-            const target = document.createElement('div');
-            target.className = 'target';
-            target.style.left = Math.random() * 80 + 10 + '%';
-            target.style.top = Math.random() * 80 + 10 + '%';
+        
+        // Game state
+        const gameState = {
+            player: {
+                position: new THREE.Vector3(0, 1, 0),
+                velocity: new THREE.Vector3(),
+                direction: new THREE.Vector3(),
+                health: 100,
+                maxHealth: 100,
+                ammo: 30,
+                totalAmmo: 90,
+                reloading: false,
+                score: 0,
+                speed: 5,
+                isMoving: false,
+                lastShot: 0,
+                skills: {
+                    dash: { cooldown: 0, maxCooldown: 10000 },
+                    heal: { cooldown: 0, maxCooldown: 15000 },
+                    grenade: { cooldown: 0, maxCooldown: 8000 },
+                    ultimate: { cooldown: 0, maxCooldown: 30000 }
+                }
+            },
+            enemies: [],
+            bullets: [],
+            enemyBullets: [],
+            grenades: [],
+            lastEnemySpawn: 0,
+            enemySpawnDelay: 2000,
+            keys: {},
+            mouse: {
+                x: 0,
+                y: 0,
+                clicked: false
+            },
+            gameOver: false,
+            enemiesToSpawn: 10,
+            enemiesKilled: 0,
+            level: 1,
+            clock: new THREE.Clock(),
+            joystickActive: false,
+            joystickPosition: new THREE.Vector2(),
+            lookTouchId: null,
+            moveTouchId: null
+        };
+        
+        // Weapons
+        const weapons = {
+            pistol: {
+                name: "Classic",
+                damage: 15,
+                ammo: 12,
+                maxAmmo: 12,
+                totalAmmo: 36,
+                shotDelay: 300,
+                reloadTime: 1500,
+                spread: 0.05
+            },
+            rifle: {
+                name: "Phantom",
+                damage: 25,
+                ammo: 30,
+                maxAmmo: 30,
+                totalAmmo: 90,
+                shotDelay: 100,
+                reloadTime: 2000,
+                spread: 0.03
+            },
+            sniper: {
+                name: "Operator",
+                damage: 150,
+                ammo: 5,
+                maxAmmo: 5,
+                totalAmmo: 15,
+                shotDelay: 1000,
+                reloadTime: 3000,
+                spread: 0.01
+            }
+        };
+        
+        gameState.currentWeapon = weapons.rifle;
+        document.getElementById('weapon').textContent = "Weapon: " + gameState.currentWeapon.name;
+        
+        // Player model
+        const playerGeometry = new THREE.BoxGeometry(0.5, 1.8, 0.5);
+        const playerMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+        const player = new THREE.Mesh(playerGeometry, playerMaterial);
+        player.position.copy(gameState.player.position);
+        player.castShadow = true;
+        scene.add(player);
+        
+        // Floor
+        const floorGeometry = new THREE.PlaneGeometry(100, 100);
+        const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.DoubleSide });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        
+        // Walls
+        const wallGeometry = new THREE.BoxGeometry(100, 10, 2);
+        const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        
+        const walls = [];
+        for (let i = 0; i < 4; i++) {
+            const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+            wall.position.y = 5;
+            wall.castShadow = true;
+            wall.receiveShadow = true;
             
-            target.addEventListener('click', () => {
-                score += 100;
-                document.getElementById('score').textContent = `Score: ${score}`;
-                target.remove();
-            });
-
-            gameContainer.appendChild(target);
+            if (i === 0) wall.position.z = -50;
+            else if (i === 1) wall.position.z = 50;
+            else if (i === 2) {
+                wall.rotation.y = Math.PI / 2;
+                wall.position.x = -50;
+            } else {
+                wall.rotation.y = Math.PI / 2;
+                wall.position.x = 50;
+            }
+            
+            scene.add(wall);
+            walls.push(wall);
         }
-
-        // Shooting logic
-        function shoot() {
-            const projectile = document.createElement('div');
-            projectile.className = 'projectile';
-            projectile.style.transform = `translateZ(500px)`;
-            gameContainer.appendChild(projectile);
-
-            requestAnimationFrame(() => {
-                projectile.style.transform = `translateZ(1000px)`;
-                setTimeout(() => projectile.remove(), 500);
+        
+        // Bullet material
+        const bulletMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        const enemyBulletMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+        
+        // Grenade material
+        const grenadeMaterial = new THREE.MeshPhongMaterial({ color: 0x8B4513 });
+        
+        // Mobile controls setup
+        if (isMobile) {
+            document.getElementById('mobileControls').style.display = 'block';
+            document.getElementById('shootButton').style.display = 'flex';
+            document.getElementById('mobileLook').style.display = 'block';
+            
+            // Make skills clickable on mobile
+            document.querySelectorAll('.skill').forEach(skill => {
+                skill.style.pointerEvents = 'auto';
             });
         }
-
-        // Event Listeners
-        startButton.addEventListener('click', initGame);
-
-        // Desktop controls
-        gameContainer.addEventListener('mousedown', () => {
-            isShooting = true;
+        
+        // Event listeners
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        window.addEventListener('keydown', (e) => {
+            gameState.keys[e.key.toLowerCase()] = true;
+            
+            // Weapon switching
+            if (e.key === '1') switchWeapon(weapons.pistol);
+            else if (e.key === '2') switchWeapon(weapons.rifle);
+            else if (e.key === '3') switchWeapon(weapons.sniper);
+            else if (e.key === 'r' && !gameState.player.reloading && gameState.player.ammo < gameState.currentWeapon.ammo && gameState.player.totalAmmo > 0) reload();
+            else if (e.key === 'q') useSkill('dash');
+            else if (e.key === 'e') useSkill('heal');
+            else if (e.key === 'f') useSkill('grenade');
+            else if (e.key === 'x') useSkill('ultimate');
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            gameState.keys[e.key.toLowerCase()] = false;
+        });
+        
+        canvas.addEventListener('click', () => {
+            if (!isMobile && !controls.isLocked) {
+                controls.lock();
+            }
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (controls && controls.isLocked) {
+                gameState.mouse.x = e.movementX;
+                gameState.mouse.y = e.movementY;
+            }
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // Left click
+                gameState.mouse.clicked = true;
+                shoot();
+            }
+        });
+        
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                gameState.mouse.clicked = false;
+            }
+        });
+        
+        // Mobile touch controls
+        const joystick = document.getElementById('joystick');
+        const joystickKnob = document.getElementById('joystickKnob');
+        const shootButton = document.getElementById('shootButton');
+        const mobileLook = document.getElementById('mobileLook');
+        
+        joystick.addEventListener('touchstart', handleJoystickStart, { passive: false });
+        joystick.addEventListener('touchmove', handleJoystickMove, { passive: false });
+        joystick.addEventListener('touchend', handleJoystickEnd, { passive: false });
+        
+        shootButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            gameState.mouse.clicked = true;
             shoot();
         });
-
-        gameContainer.addEventListener('mouseup', () => {
-            isShooting = false;
+        
+        shootButton.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            gameState.mouse.clicked = false;
         });
-
-        gameContainer.addEventListener('mousemove', (e) => {
-            if(!isShooting) {
-                const sensitivity = 0.2;
-                xAngle += e.movementX * sensitivity;
-                yAngle += e.movementY * sensitivity;
-                gameContainer.style.transform = `rotateX(${-yAngle}deg) rotateY(${-xAngle}deg)`;
+        
+        mobileLook.addEventListener('touchstart', (e) => {
+            if (gameState.lookTouchId === null) {
+                gameState.lookTouchId = e.changedTouches[0].identifier;
             }
         });
-
-        // Mobile controls
-        gameContainer.addEventListener('touchstart', (e) => {
+        
+        mobileLook.addEventListener('touchmove', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === gameState.lookTouchId) {
+                    const touch = e.changedTouches[i];
+                    const movementX = touch.clientX - gameState.mouse.x;
+                    const movementY = touch.clientY - gameState.mouse.y;
+                    
+                    // Rotate camera
+                    camera.rotation.y -= movementX * 0.002;
+                    camera.rotation.x -= movementY * 0.002;
+                    
+                    // Limit vertical rotation
+                    camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+                    
+                    gameState.mouse.x = touch.clientX;
+                    gameState.mouse.y = touch.clientY;
+                    break;
+                }
+            }
+        }, { passive: false });
+        
+        mobileLook.addEventListener('touchend', (e) => {
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === gameState.lookTouchId) {
+                    gameState.lookTouchId = null;
+                    break;
+                }
+            }
+        });
+        
+        // Skill click handlers
+        document.getElementById('skill1').addEventListener('click', () => useSkill('dash'));
+        document.getElementById('skill2').addEventListener('click', () => useSkill('heal'));
+        document.getElementById('skill3').addEventListener('click', () => useSkill('grenade'));
+        document.getElementById('skill4').addEventListener('click', () => useSkill('ultimate'));
+        
+        function handleJoystickStart(e) {
             e.preventDefault();
-            const touch = e.touches[0];
-            touchId = touch.identifier;
-            lastTouchX = touch.clientX;
-            lastTouchY = touch.clientY;
+            if (gameState.moveTouchId === null) {
+                const touch = e.changedTouches[0];
+                gameState.moveTouchId = touch.identifier;
+                gameState.joystickActive = true;
+                
+                // Position joystick at touch point
+                const rect = joystick.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                joystick.style.left = (touch.clientX - rect.width / 2) + 'px';
+                joystick.style.bottom = (window.innerHeight - touch.clientY - rect.height / 2) + 'px';
+            }
+        }
+        
+        function handleJoystickMove(e) {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === gameState.moveTouchId) {
+                    const touch = e.changedTouches[i];
+                    const rect = joystick.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    
+                    const deltaX = touch.clientX - centerX;
+                    const deltaY = touch.clientY - centerY;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    const maxDistance = rect.width / 2;
+                    
+                    if (distance > maxDistance) {
+                        const angle = Math.atan2(deltaY, deltaX);
+                        gameState.joystickPosition.x = Math.cos(angle) * maxDistance;
+                        gameState.joystickPosition.y = deltaY;
+                    }
+                    
+                    // Update joystick knob position
+                    joystickKnob.style.left = (gameState.joystickPosition.x + maxDistance - 15) + 'px';
+                    joystickKnob.style.top = (gameState.joystickPosition.y + maxDistance - 15) + 'px';
+                    
+                    break;
+                }
+            }
+        }
+        
+        function handleJoystickEnd(e) {
+            e.preventDefault();
+            for (let i = 0; i < e.changedTouches.length; i++) {
+                if (e.changedTouches[i].identifier === gameState.moveTouchId) {
+                    gameState.moveTouchId = null;
+                    gameState.joystickActive = false;
+                    gameState.joystickPosition.set(0, 0);
+                    
+                    // Reset joystick position
+                    joystick.style.left = '0';
+                    joystick.style.bottom = '0';
+                    joystickKnob.style.left = '15px';
+                    joystickKnob.style.top = '15px';
+                    
+                    break;
+                }
+            }
+        }
+        
+        // Game functions
+        function switchWeapon(weapon) {
+            gameState.currentWeapon = weapon;
+            document.getElementById('weapon').textContent = "Weapon: " + weapon.name;
+            updateAmmoDisplay();
+        }
+        
+        function spawnEnemy() {
+            // Spawn enemy at random position around player
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 20 + Math.random() * 10;
             
-            // Shooting touch (right side)
-            if(touch.clientX > window.innerWidth/2) {
-                shoot();
-            } else { // Movement touch (left side)
-                lookTouchId = touch.identifier;
+            const x = gameState.player.position.x + Math.cos(angle) * distance;
+            const z = gameState.player.position.z + Math.sin(angle) * distance;
+            
+            const size = 1 + Math.random() * 0.5;
+            const speed = 1 + Math.random() * 0.5;
+            const health = 50 + gameState.level * 10;
+            
+            const enemyGeometry = new THREE.BoxGeometry(size, size, size);
+            const enemyMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+            const enemy = new THREE.Mesh(enemyGeometry, enemyMaterial);
+            enemy.position.set(x, size / 2, z);
+            enemy.castShadow = true;
+            scene.add(enemy);
+            
+            gameState.enemies.push({
+                mesh: enemy,
+                size: size,
+                speed: speed,
+                health: health,
+                maxHealth: health,
+                lastShot: 0,
+                shotDelay: 1000 + Math.random() * 1000,
+                hitAnimation: 0
+            });
+        }
+        
+        function shoot() {
+            const now = Date.now();
+            if (now - gameState.player.lastShot < gameState.currentWeapon.shotDelay || gameState.player.reloading) {
+                return;
+            }
+            
+            if (gameState.player.ammo <= 0) {
+                if (gameState.player.totalAmmo > 0) {
+                    reload();
+                }
+                return;
+            }
+            
+            gameState.player.lastShot = now;
+            gameState.player.ammo--;
+            updateAmmoDisplay();
+            
+            // Add bullet spread
+            const spread = (Math.random() - 0.5) * gameState.currentWeapon.spread;
+            camera.rotation.y += spread;
+            camera.rotation.x += spread;
+            
+            // Create bullet
+            const bulletGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+            const bullet = new THREE.Mesh(bulletGeometry, bulletMaterial);
+            
+            // Set bullet position and direction
+            bullet.position.copy(camera.position);
+            const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            bullet.userData = {
+                direction: direction,
+                speed: 0.5,
+                damage: gameState.currentWeapon.damage
+            };
+            
+            scene.add(bullet);
+            gameState.bullets.push(bullet);
+            
+            // Reset camera rotation after applying spread
+            camera.rotation.y -= spread;
+            camera.rotation.x -= spread;
+            
+            // Muzzle flash
+            const muzzleFlash = new THREE.PointLight(0xff6600, 2, 0.5);
+            muzzleFlash.position.copy(camera.position);
+            muzzleFlash.position.add(direction.multiplyScalar(0.5));
+            scene.add(muzzleFlash);
+            
+            // Remove muzzle flash after short time
+            setTimeout(() => {
+                scene.remove(muzzleFlash);
+            }, 50);
+        }
+        
+        function enemyShoot(enemy) {
+            const now = Date.now();
+            if (now - enemy.lastShot < enemy.shotDelay) {
+                return;
+            }
+            
+            enemy.lastShot = now;
+            
+            // Create bullet
+            const bulletGeometry = new THREE.SphereGeometry(0.1, 8, 8);
+            const bullet = new THREE.Mesh(bulletGeometry, enemyBulletMaterial);
+            
+            // Set bullet position and direction
+            bullet.position.copy(enemy.mesh.position);
+            bullet.position.y += enemy.size / 2;
+            
+            const direction = new THREE.Vector3().subVectors(player.position, enemy.mesh.position).normalize();
+            bullet.userData = {
+                direction: direction,
+                speed: 0.2,
+                damage: 10
+            };
+            
+            scene.add(bullet);
+            gameState.enemyBullets.push(bullet);
+            
+            // Hit animation
+            enemy.hitAnimation = 1;
+        }
+        
+        function throwGrenade() {
+            const grenadeGeometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const grenade = new THREE.Mesh(grenadeGeometry, grenadeMaterial);
+            
+            grenade.position.copy(camera.position);
+            const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            
+            grenade.userData = {
+                velocity: new THREE.Vector3().copy(direction).multiplyScalar(0.3),
+                gravity: -0.001,
+                timer: 2000, // 2 seconds
+                damage: 50,
+                radius: 5
+            };
+            
+            scene.add(grenade);
+            gameState.grenades.push(grenade);
+        }
+        
+        function explodeGrenade(grenade) {
+            // Create explosion effect
+            const explosionGeometry = new THREE.SphereGeometry(0.1, 16, 16);
+            const explosionMaterial = new THREE.MeshBasicMaterial({ color: 0xff6600 });
+            const explosion = new THREE.Mesh(explosionGeometry, explosionMaterial);
+            explosion.position.copy(grenade.position);
+            scene.add(explosion);
+            
+            // Add explosion light
+            const light = new THREE.PointLight(0xff6600, 5, 10);
+            light.position.copy(grenade.position);
+            scene.add(light);
+            
+            // Check for enemies in radius
+            gameState.enemies.forEach(enemy => {
+                const distance = grenade.position.distanceTo(enemy.mesh.position);
+                if (distance < grenade.userData.radius) {
+                    // Damage decreases with distance
+                    const damage = grenade.userData.damage * (1 - distance / grenade.userData.radius);
+                    enemy.health -= damage;
+                    enemy.hitAnimation = 1;
+                    
+                    if (enemy.health <= 0) {
+                        scene.remove(enemy.mesh);
+                        gameState.enemies = gameState.enemies.filter(e => e !== enemy);
+                        gameState.player.score += 100;
+                        gameState.enemiesKilled++;
+                        updateScore();
+                        
+                        if (gameState.enemiesKilled >= gameState.enemiesToSpawn) {
+                            nextLevel();
+                        }
+                    }
+                }
+            });
+            
+            // Remove explosion after short time
+            setTimeout(() => {
+                scene.remove(explosion);
+                scene.remove(light);
+            }, 200);
+        }
+        
+        function reload() {
+            if (gameState.player.reloading || gameState.player.ammo === gameState.currentWeapon.ammo || gameState.player.totalAmmo <= 0) {
+                return;
+            }
+            
+            gameState.player.reloading = true;
+            showMessage("Reloading...");
+            
+            setTimeout(() => {
+                const ammoNeeded = gameState.currentWeapon.ammo - gameState.player.ammo;
+                const ammoToTake = Math.min(ammoNeeded, gameState.player.totalAmmo);
+                
+                gameState.player.ammo += ammoToTake;
+                gameState.player.totalAmmo -= ammoToTake;
+                
+                gameState.player.reloading = false;
+                updateAmmoDisplay();
+                hideMessage();
+            }, gameState.currentWeapon.reloadTime);
+        }
+        
+        function useSkill(skillName) {
+            const now = Date.now();
+            const skill = gameState.player.skills[skillName];
+            
+            if (skill.cooldown > now) return;
+            
+            switch (skillName) {
+                case 'dash':
+                    // Dash forward
+                    const dashDirection = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                    gameState.player.velocity.add(dashDirection.multiplyScalar(2));
+                    showMessage("Dashing!");
+                    break;
+                    
+                case 'heal':
+                    // Heal player
+                    gameState.player.health = Math.min(gameState.player.health + 50, gameState.player.maxHealth);
+                    healthFill.style.width = `${(gameState.player.health / gameState.player.maxHealth) * 100}%`;
+                    showMessage("Healing!");
+                    break;
+                    
+                case 'grenade':
+                    // Throw grenade
+                    throwGrenade();
+                    showMessage("Grenade out!");
+                    break;
+                    
+                case 'ultimate':
+                    // Ultimate ability - kill all nearby enemies
+                    const killed = [];
+                    gameState.enemies.forEach(enemy => {
+                        const distance = gameState.player.position.distanceTo(enemy.mesh.position);
+                        if (distance < 15) {
+                            scene.remove(enemy.mesh);
+                            killed.push(enemy);
+                            gameState.player.score += 100;
+                            gameState.enemiesKilled++;
+                        }
+                    });
+                    
+                    gameState.enemies = gameState.enemies.filter(enemy => !killed.includes(enemy));
+                    updateScore();
+                    showMessage("ULTIMATE!");
+                    
+                    // Ultimate effect
+                    const ultimateLight = new THREE.PointLight(0xffffff, 10, 20);
+                    ultimateLight.position.copy(gameState.player.position);
+                    scene.add(ultimateLight);
+                    
+                    setTimeout(() => {
+                        scene.remove(ultimateLight);
+                    }, 500);
+                    
+                    if (gameState.enemiesKilled >= gameState.enemiesToSpawn) {
+                        nextLevel();
+                    }
+                    break;
+            }
+            
+            // Set cooldown
+            skill.cooldown = now + skill.maxCooldown;
+            updateSkillCooldowns();
+        }
+        
+        function updateSkillCooldowns() {
+            const now = Date.now();
+            
+            Object.keys(gameState.player.skills).forEach((skillName, index) => {
+                const skill = gameState.player.skills[skillName];
+                const cooldownElement = document.getElementById(`cooldown${index + 1}`);
+                
+                if (skill.cooldown > now) {
+                    const remaining = skill.cooldown - now;
+                    const percentage = (remaining / skill.maxCooldown) * 100;
+                    cooldownElement.style.height = `${percentage}%`;
+                } else {
+                    cooldownElement.style.height = '0%';
+                }
+            });
+        }
+        
+        function updateAmmoDisplay() {
+            ammoInfo.textContent = `${gameState.player.ammo} / ${gameState.player.totalAmmo}`;
+        }
+        
+        function updateScore() {
+            scoreElement.textContent = `Score: ${gameState.player.score}`;
+            enemiesRemainingElement.textContent = `Enemies: ${gameState.enemiesToSpawn - gameState.enemiesKilled}`;
+        }
+        
+        function showMessage(text) {
+            messageElement.textContent = text;
+            messageElement.style.opacity = 1;
+            
+            setTimeout(() => {
+                hideMessage();
+            }, 1000);
+        }
+        
+        function hideMessage() {
+            messageElement.style.opacity = 0;
+        }
+        
+        function checkCollisions() {
+            // Bullet-enemy collisions
+            for (let i = gameState.bullets.length - 1; i >= 0; i--) {
+                const bullet = gameState.bullets[i];
+                
+                for (let j = gameState.enemies.length - 1; j >= 0; j--) {
+                    const enemy = gameState.enemies[j];
+                    
+                    if (bullet.position.distanceTo(enemy.mesh.position) < enemy.size) {
+                        enemy.health -= bullet.userData.damage;
+                        enemy.hitAnimation = 1;
+                        scene.remove(bullet);
+                        gameState.bullets.splice(i, 1);
+                        
+                        if (enemy.health <= 0) {
+                            scene.remove(enemy.mesh);
+                            gameState.enemies.splice(j, 1);
+                            gameState.player.score += 100;
+                            gameState.enemiesKilled++;
+                            updateScore();
+                            
+                            if (gameState.enemiesKilled >= gameState.enemiesToSpawn) {
+                                nextLevel();
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Enemy bullet-player collisions
+            for (let i = gameState.enemyBullets.length - 1; i >= 0; i--) {
+                const bullet = gameState.enemyBullets[i];
+                
+                if (bullet.position.distanceTo(gameState.player.position) < 1) {
+                    gameState.player.health -= bullet.userData.damage;
+                    scene.remove(bullet);
+                    gameState.enemyBullets.splice(i, 1);
+                    healthFill.style.width = `${(gameState.player.health / gameState.player.maxHealth) * 100}%`;
+                    
+                    // Player hit effect
+                    document.body.style.backgroundColor = '#300';
+                    setTimeout(() => {
+                        document.body.style.backgroundColor = '#000';
+                    }, 100);
+                    
+                    if (gameState.player.health <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+            
+            // Enemy-player collisions
+            for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+                const enemy = gameState.enemies[i];
+                
+                if (enemy.mesh.position.distanceTo(gameState.player.position) < enemy.size + 0.5) {
+                    gameState.player.health -= 0.5;
+                    healthFill.style.width = `${(gameState.player.health / gameState.player.maxHealth) * 100}%`;
+                    
+                    if (gameState.player.health <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+        }
+        
+        function nextLevel() {
+            gameState.level++;
+            gameState.enemiesToSpawn = 10 + gameState.level * 2;
+            gameState.enemiesKilled = 0;
+            enemiesRemainingElement.textContent = `Enemies: ${gameState.enemiesToSpawn}`;
+            showMessage(`Level ${gameState.level} - Get Ready!`);
+            
+            // Heal player
+            gameState.player.health = Math.min(gameState.player.health + 30, gameState.player.maxHealth);
+            healthFill.style.width = `${(gameState.player.health / gameState.player.maxHealth) * 100}%`;
+            
+            // Refill ammo
+            gameState.player.totalAmmo += 30;
+            updateAmmoDisplay();
+        }
+        
+        function gameOver() {
+            gameState.gameOver = true;
+            showMessage(`Game Over - Score: ${gameState.player.score}`);
+            
+            setTimeout(() => {            if (confirm(`Game Over! Your score: ${gameState.player.score}\nPlay again?`)) {
+                resetGame();
+            }
+        }, 1000);
+    }
+
+    function resetGame() {
+        // Remove all enemies
+        gameState.enemies.forEach(enemy => {
+            scene.remove(enemy.mesh);
+        });
+        
+        // Remove all bullets
+        gameState.bullets.forEach(bullet => {
+            scene.remove(bullet);
+        });
+        
+        gameState.enemyBullets.forEach(bullet => {
+            scene.remove(bullet);
+        });
+        
+        gameState.grenades.forEach(grenade => {
+            scene.remove(grenade);
+        });
+
+        // Reset player state
+        gameState.player.position.set(0, 1, 0);
+        gameState.player.velocity.set(0, 0, 0);
+        gameState.player.health = gameState.player.maxHealth;
+        gameState.player.ammo = gameState.currentWeapon.ammo;
+        gameState.player.totalAmmo = gameState.currentWeapon.totalAmmo;
+        gameState.player.score = 0;
+        gameState.player.reloading = false;
+        
+        // Reset game state
+        gameState.enemies = [];
+        gameState.bullets = [];
+        gameState.enemyBullets = [];
+        gameState.grenades = [];
+        gameState.gameOver = false;
+        gameState.level = 1;
+        gameState.enemiesToSpawn = 10;
+        gameState.enemiesKilled = 0;
+
+        // Reset camera
+        camera.position.copy(gameState.player.position);
+        camera.rotation.set(0, 0, 0);
+        
+        // Reset HUD
+        healthFill.style.width = '100%';
+        updateAmmoDisplay();
+        updateScore();
+        hideMessage();
+        
+        // Reset skills cooldown
+        const now = Date.now();
+        Object.keys(gameState.player.skills).forEach(skillName => {
+            gameState.player.skills[skillName].cooldown = now;
+        });
+        updateSkillCooldowns();
+    }
+
+    // Game loop
+    function animate() {
+        if (gameState.gameOver) return;
+
+        const deltaTime = gameState.clock.getDelta();
+        
+        // Update skill cooldowns
+        updateSkillCooldowns();
+
+        // Player movement
+        const moveSpeed = deltaTime * gameState.player.speed;
+        const moveVector = new THREE.Vector3();
+
+        if (!isMobile) {
+            if (gameState.keys['w']) moveVector.z -= 1;
+            if (gameState.keys['s']) moveVector.z += 1;
+            if (gameState.keys['a']) moveVector.x -= 1;
+            if (gameState.keys['d']) moveVector.x += 1;
+        } else if (gameState.joystickActive) {
+            // Mobile joystick movement
+            moveVector.x = gameState.joystickPosition.x * 0.01;
+            moveVector.z = gameState.joystickPosition.y * 0.01;
+        }
+
+        // Normalize and apply movement
+        if (moveVector.length() > 0) {
+            moveVector.normalize();
+            moveVector.multiplyScalar(moveSpeed);
+            
+            // Apply movement relative to camera direction
+            const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+            const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+            
+            forward.y = 0;
+            forward.normalize();
+            right.y = 0;
+            right.normalize();
+            
+            const moveDirection = new THREE.Vector3();
+            moveDirection.add(forward.multiplyScalar(moveVector.z));
+            moveDirection.add(right.multiplyScalar(moveVector.x));
+            
+            gameState.player.position.add(moveDirection);
+        }
+
+        // Apply gravity and movement
+        gameState.player.velocity.y -= 0.01; // Gravity
+        gameState.player.position.add(gameState.player.velocity);
+        
+        // Ground collision
+        if (gameState.player.position.y < 1) {
+            gameState.player.position.y = 1;
+            gameState.player.velocity.y = 0;
+        }
+
+        // Update camera position
+        camera.position.copy(gameState.player.position);
+        camera.position.y += 1.6; // Eye level
+
+        // Update player mesh position
+        player.position.copy(gameState.player.position);
+
+        // Auto-fire if mouse is held down
+        if (gameState.mouse.clicked) {
+            shoot();
+        }
+
+        // Update bullets
+        gameState.bullets.forEach(bullet => {
+            bullet.position.add(bullet.userData.direction.multiplyScalar(bullet.userData.speed));
+        });
+
+        gameState.enemyBullets.forEach(bullet => {
+            bullet.position.add(bullet.userData.direction.multiplyScalar(bullet.userData.speed));
+        });
+
+        // Update grenades
+        for (let i = gameState.grenades.length - 1; i >= 0; i--) {
+            const grenade = gameState.grenades[i];
+            
+            grenade.userData.velocity.y += grenade.userData.gravity;
+            grenade.position.add(grenade.userData.velocity);
+            
+            grenade.userData.timer -= deltaTime * 1000;
+            if (grenade.userData.timer <= 0) {
+                explodeGrenade(grenade);
+                scene.remove(grenade);
+                gameState.grenades.splice(i, 1);
+            }
+        }
+
+        // Update enemies
+        gameState.enemies.forEach(enemy => {
+            // Move enemy toward player
+            const direction = new THREE.Vector3().subVectors(gameState.player.position, enemy.mesh.position).normalize();
+            enemy.mesh.position.add(direction.multiplyScalar(deltaTime * enemy.speed));
+            
+            // Face player
+            enemy.mesh.lookAt(gameState.player.position);
+            
+            // Enemy shooting
+            if (Math.random() < 0.01 * deltaTime * 60) {
+                enemyShoot(enemy);
+            }
+            
+            // Hit animation
+            if (enemy.hitAnimation > 0) {
+                enemy.mesh.material.color.setHex(0xff3333);
+                enemy.hitAnimation -= deltaTime;
+            } else {
+                enemy.mesh.material.color.setHex(0xff0000);
             }
         });
 
-        gameContainer.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            const touch = Array.from(e.touches).find(t => t.identifier === lookTouchId);
-            if(touch) {
-                const deltaX = touch.clientX - lastTouchX;
-                const deltaY = touch.clientY - lastTouchY;
-                const sensitivity = 0.5;
-                
-                xAngle += deltaX * sensitivity;
-                yAngle += deltaY * sensitivity;
-                gameContainer.style.transform = `rotateX(${-yAngle}deg) rotateY(${-xAngle}deg)`;
-                
-                lastTouchX = touch.clientX;
-                lastTouchY = touch.clientY;
+        // Spawn new enemies
+        const now = Date.now();
+        if (now - gameState.lastEnemySpawn > gameState.enemySpawnDelay && 
+            gameState.enemies.length < 5 + gameState.level && 
+            gameState.enemiesKilled < gameState.enemiesToSpawn) {
+            gameState.lastEnemySpawn = now;
+            spawnEnemy();
+        }
+
+        // Check collisions
+        checkCollisions();
+
+        // Remove out of bounds bullets
+        gameState.bullets = gameState.bullets.filter(bullet => {
+            if (bullet.position.length() > 100) {
+                scene.remove(bullet);
+                return false;
             }
+            return true;
         });
 
-        gameContainer.addEventListener('touchend', (e) => {
-            if(e.touches.length === 0) {
-                touchId = null;
-                lookTouchId = null;
+        gameState.enemyBullets = gameState.enemyBullets.filter(bullet => {
+            if (bullet.position.distanceTo(gameState.player.position) > 100) {
+                scene.remove(bullet);
+                return false;
             }
+            return true;
         });
-    </script>
-</body>
-</html>
+
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+    }
+
+    // Start game
+    function startGame() {
+        // Initialize mobile controls if needed
+        if (isMobile) {
+            document.getElementById('mobileControls').style.display = 'block';
+            document.getElementById('shootButton').style.display = 'flex';
+            document.getElementById('mobileLook').style.display = 'block';
+            
+            // Lock pointer for mobile
+            canvas.requestPointerLock = canvas.requestPointerLock || 
+                                      canvas.mozRequestPointerLock || 
+                                      canvas.webkitRequestPointerLock;
+            document.exitPointerLock = document.exitPointerLock || 
+                                      document.mozExitPointerLock || 
+                                      document.webkitExitPointerLock;
+            
+            // Hide address bar on mobile
+            window.addEventListener('load', function() {
+                setTimeout(function() {
+                    window.scrollTo(0, 1);
+                }, 0);
+            });
+        } else {
+            // Add pointer lock controls for desktop
+            document.addEventListener('pointerlockchange', lockChangeAlert, false);
+            document.addEventListener('mozpointerlockchange', lockChangeAlert, false);
+            document.addEventListener('webkitpointerlockchange', lockChangeAlert, false);
+            
+            function lockChangeAlert() {
+                if (document.pointerLockElement === canvas || 
+                    document.mozPointerLockElement === canvas || 
+                    document.webkitPointerLockElement === canvas) {
+                    console.log('Pointer locked');
+                } else {
+                    console.log('Pointer unlocked');
+                }
+            }
+        }
+        
+        // Start game loop
+        resetGame();
+        animate();
+    }
+
+    // Start the game
+    startGame();
+</script>
